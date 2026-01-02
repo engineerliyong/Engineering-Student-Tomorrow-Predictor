@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engineering Student Day Predictor</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --neon-cyan: #0ff;
+      --neon-orange: #ff9900;
+      --neon-green: #0f0;
+      --bg-dark: #050510;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: var(--bg-dark);
+      color: var(--neon-cyan);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .grid-bg {
+      position: fixed;
+      width: 200%;
+      height: 200%;
+      background-image: 
+        linear-gradient(rgba(0, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 30px 30px;
+      transform: perspective(500px) rotateX(60deg);
+      animation: gridMove 40s linear infinite;
+      z-index: -2;
+    }
+
+    @keyframes gridMove {
+      0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+      100% { transform: perspective(500px) rotateX(60deg) translateY(30px); }
+    }
+
+    .scanlines {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(to bottom, transparent 49%, rgba(255,255,255,0.02) 50%, transparent 51%);
+      background-size: 100% 3px;
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0.5;
+    }
+
+    /* Main Container */
+    .container {
+      background: rgba(8, 8, 18, 0.95);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 6px;
+      padding: 25px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.15);
+      text-align: center;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 5px;
+      text-shadow: 0 0 10px var(--neon-cyan);
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.8rem;
+      margin-bottom: 20px;
+    }
+
+    /* Input Area */
+    .input-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      color: var(--neon-orange);
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+    }
+
+    .hack-select {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      border: 1px solid var(--neon-cyan);
+      padding: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 1rem;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%230ff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px top 50%;
+      background-size: 10px auto;
+    }
+
+    .hack-select:hover {
+      box-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    /* Button */
+    .predict-btn {
+      width: 100%;
+      background: rgba(0, 255, 255, 0.1);
+      color: var(--neon-cyan);
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: bold;
+      padding: 16px 0;
+      border: 1px solid var(--neon-cyan);
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .predict-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.6s;
+    }
+
+    .predict-btn:hover:not(:disabled)::before {
+      left: 100%;
+    }
+
+    .predict-btn:hover:not(:disabled) {
+      background: rgba(0, 255, 255, 0.2);
+      box-shadow: 0 0 15px var(--neon-cyan);
+      transform: translateY(-2px);
+    }
+
+    .predict-btn:disabled {
+      border-color: #444;
+      color: #666;
+      background: rgba(0, 0, 0, 0.5);
+      cursor: not-allowed;
+    }
+
+    /* Terminal Window */
+    .terminal-window {
+      background: rgba(0, 5, 10, 0.9);
+      border: 1px solid #333;
+      height: 180px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+      border-radius: 4px;
+    }
+
+    .loader-bar {
+      height: 3px;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-orange));
+      width: 0%;
+      position: absolute;
+      top: 0; left: 0;
+      box-shadow: 0 0 10px var(--neon-cyan);
+      transition: width 0.5s ease;
+    }
+
+    .message-display {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: #fff;
+      text-align: center;
+      padding: 10px;
+      width: 100%;
+      height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .message-content {
+      max-width: 95%;
+      padding: 10px;
+      border-left: 2px solid var(--neon-orange);
+      background: rgba(0, 20, 40, 0.3);
+    }
+
+    .highlight { 
+      color: var(--neon-cyan);
+      font-weight: bold;
+    }
+    
+    .engineering-term {
+      color: var(--neon-orange);
+      font-weight: bold;
+    }
+    
+    .percentage {
+      color: var(--neon-green);
+      font-weight: bold;
+      font-size: 0.9rem;
+      margin-top: 8px;
+      display: block;
+    }
+    
+    .blink { 
+      animation: blink 1s infinite; 
+      color: var(--neon-green);
+    }
+    
+    @keyframes blink { 
+      0%, 100% { opacity: 1; } 
+      50% { opacity: 0.3; } 
+    }
+
+    .progress-info {
+      position: absolute;
+      bottom: 10px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 15px;
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    .progress-text {
+      color: var(--neon-green);
+      font-weight: bold;
+    }
+
+    /* Result */
+    .result-container {
+      display: none;
+      animation: resultFadeIn 0.5s ease;
+      width: 100%;
+    }
+
+    @keyframes resultFadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-label {
+      font-size: 0.7rem;
+      color: #888;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+
+    .result-day {
+      font-size: 2rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px currentColor;
+    }
+
+    .result-snark {
+      font-size: 0.9rem;
+      color: var(--neon-green);
+      font-style: italic;
+      max-width: 90%;
+      margin: 0 auto 10px;
+      line-height: 1.4;
+    }
+
+    .confidence {
+      font-size: 0.8rem;
+      color: var(--neon-orange);
+      margin-top: 8px;
+      opacity: 0.9;
+    }
+
+    /* Day colors */
+    .monday-color { color: #ff5555; }
+    .tuesday-color { color: #ffaa00; }
+    .wednesday-color { color: #ff00ff; }
+    .thursday-color { color: #aa55ff; }
+    .friday-color { color: #00ffaa; }
+    .saturday-color { color: #55ffff; }
+    .sunday-color { color: #ffff55; }
+
+    .emoji {
+      font-size: 1rem;
+      margin: 0 2px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+      }
+      
+      h1 {
+        font-size: 1.4rem;
+      }
+      
+      .terminal-window {
+        height: 160px;
+        padding: 12px;
+      }
+      
+      .message-display {
+        font-size: 0.9rem;
+        height: 115px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid-bg"></div>
+  <div class="scanlines"></div>
+
+  <main class="container">
+    <header>
+      <h1>ENGINEERING STUDENT DAY PREDICTOR</h1>
+      <p class="subtitle">WILL I SURVIVE 3RD YEAR? ASKING FOR A FRIEND</p>
+    </header>
+
+    <div class="input-group">
+      <label for="dayInput">> SELECT TODAY (I FORGOT)</label>
+      <select id="dayInput" class="hack-select">
+        <option value="" disabled selected>-- What day is it? --</option>
+        <option value="Monday">Monday</option>
+        <option value="Tuesday">Tuesday</option>
+        <option value="Wednesday">Wednesday</option>
+        <option value="Thursday">Thursday</option>
+        <option value="Friday">Friday</option>
+        <option value="Saturday">Saturday</option>
+        <option value="Sunday">Sunday</option>
+      </select>
+    </div>
+
+    <button class="predict-btn" id="predictBtn">PREDICT TOMORROW</button>
+
+    <div class="terminal-window">
+      <div class="loader-bar" id="loaderBar"></div>
+      <div class="progress-info">
+        <span id="currentOperation">Coffee: Critical</span>
+        <span class="progress-text" id="progressText">0%</span>
+      </div>
+      
+      <div class="message-display" id="messageDisplay">
+        <div class="message-content">
+          > System ready<br>
+          > Coffee level: <span class="highlight">Emergency</span><span class="blink">_</span>
+        </div>
+      </div>
+
+      <div id="resultArea" class="result-container">
+        <div class="result-label">PREDICTION COMPLETE</div>
+        <div class="result-day" id="dayDisplay">TOMORROW</div>
+        <div class="result-snark" id="snarkDisplay"></div>
+        <div class="confidence" id="confidenceDisplay"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    // Reduced number of messages for faster loading
+    const funnyMessages = [
+      {text: "Trying to understand <span class='engineering-term'>control systems</span>… poles and zeros everywhere <span class='emoji'>⚙️</span>", percent: 20, duration: 2700},
+      {text: "Laplace transforming my will to live… still diverging <span class='emoji'>📉</span>", percent: 40, duration: 2700},
+      {text: "7 a.m. <span class='engineering-term'>EM Fields</span> class… brain still asleep <span class='emoji'>😴</span>", percent: 55, duration: 2700},
+      {text: "Will I finish 3rd year or will 3rd year finish me? <span class='emoji'>🤔</span>", percent: 65, duration: 2700},
+      {text: "Trying to follow the lecture but the lecturer is in s-domain while I'm stuck in time-domain… <span class='emoji'>⏳</span>", percent: 75, duration: 2700},
+      {text: "Professor: 'This is simple' Me: Seeing Maxwell's ghost <span class='emoji'>👻</span>", percent: 85, duration: 2700},
+      {text: "Calculating if I'll survive today's lectures… probability ≈ 0.42 <span class='emoji'>📚</span>", percent: 95, duration: 2700}
+    ];
+
+    const snarkyComments = {
+      "Monday": "My condolences. 7 AM EM Fields awaits. ☕",
+      "Tuesday": "Control systems lab day. Good luck. ⚙️",
+      "Wednesday": "Hump day. Almost to weekend collapse. 🏔️",
+      "Thursday": "Friday's awkward sibling. Hang in there. 🤞",
+      "Friday": "Weekend loading... unless you have Saturday lab. 🎉",
+      "Saturday": "A day to sleep through missed lectures. 😴",
+      "Sunday": "The calm before the Monday storm. ⛈️"
+    };
+
+    const confidenceMessages = [
+      "Confidence: 42% (The engineering answer)",
+      "Accuracy: Higher than my GPA 📊",
+      "Certainty: More than my 7 AM attendance ⏰",
+      "Trust factor: Better than my alarm reliability ⏰"
+    ];
+
+    // DOM Elements
+    const btn = document.getElementById('predictBtn');
+    const dayInput = document.getElementById('dayInput');
+    const messageDisplay = document.getElementById('messageDisplay');
+    const resultArea = document.getElementById('resultArea');
+    const dayDisplay = document.getElementById('dayDisplay');
+    const snarkDisplay = document.getElementById('snarkDisplay');
+    const loaderBar = document.getElementById('loaderBar');
+    const progressText = document.getElementById('progressText');
+    const currentOperation = document.getElementById('currentOperation');
+    const confidenceDisplay = document.getElementById('confidenceDisplay');
+
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const getRandomConfidence = () => confidenceMessages[Math.floor(Math.random() * confidenceMessages.length)];
+
+    async function runPrediction() {
+      const currentDay = dayInput.value;
+
+      if (!currentDay) {
+        messageDisplay.innerHTML = `<div class="message-content">
+          > <span class="highlight">ERROR: NO DAY SELECTED</span><br>
+          > Please select a day first<span class="blink">_</span>
+        </div>`;
+        return;
+      }
+
+      // Reset UI
+      btn.disabled = true;
+      btn.textContent = "ANALYZING...";
+      resultArea.style.display = 'none';
+      messageDisplay.style.display = 'flex';
+      loaderBar.style.width = '0%';
+      progressText.textContent = '0%';
+      
+      // Quick initial message
+      messageDisplay.innerHTML = `<div class="message-content">
+        > Starting survival analysis<br>
+        > Coffee: <span class="highlight">Critical</span><span class="blink">_</span>
+      </div>`;
+      currentOperation.textContent = "Initializing...";
+      await wait(1000);
+
+      // Show funny messages - faster now
+      for (let i = 0; i < funnyMessages.length; i++) {
+        const {text, percent, duration} = funnyMessages[i];
+        
+        loaderBar.style.width = `${percent}%`;
+        progressText.textContent = `${percent}%`;
+        currentOperation.textContent = text.replace(/<[^>]*>/g, '').substring(0, 25) + '...';
+        
+        messageDisplay.innerHTML = `<div class="message-content">
+          > ${text}<br>
+          <span class="percentage">Progress: ${percent}%</span><span class="blink">_</span>
+        </div>`;
+        
+        await wait(duration);
+      }
+
+      // Final quick step
+      loaderBar.style.width = '100%';
+      progressText.textContent = '100%';
+      currentOperation.textContent = "Finalizing";
+      messageDisplay.innerHTML = `<div class="message-content">
+        > Analysis complete<br>
+        > Result: <span class="highlight">You'll probably survive</span><span class="blink">_</span>
+      </div>`;
+      await wait(1200);
+
+      // Calculate and show result
+      const currentIndex = days.indexOf(currentDay);
+      const nextIndex = (currentIndex + 1) % 7;
+      const nextDay = days[nextIndex];
+
+      messageDisplay.style.display = 'none';
+      resultArea.style.display = 'block';
+      
+      dayDisplay.innerText = nextDay.toUpperCase();
+      dayDisplay.className = `result-day ${nextDay.toLowerCase()}-color`;
+      snarkDisplay.innerText = snarkyComments[nextDay];
+      confidenceDisplay.innerText = getRandomConfidence();
+      
+      // Quick confetti
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.7 },
+        colors: ['#0ff', '#ff9900'],
+        disableForReducedMotion: true
+      });
+
+      // Reset button
+      setTimeout(() => {
+        btn.textContent = "PREDICT AGAIN";
+        btn.disabled = false;
+      }, 800);
+    }
+
+    // Event listeners
+    btn.addEventListener('click', runPrediction);
+    
+    dayInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') runPrediction();
+    });
+
+    // Idle messages (simpler)
+    const idleMessages = [
+      "Coffee: Critical",
+      "Laplace: Confusing",
+      "7 AM: Dread",
+      "3rd year: Surviving?",
+      "Sleep: Deprived"
+    ];
+    
+    let idleIndex = 0;
+    
+    setInterval(() => {
+      if (!btn.disabled && messageDisplay.style.display !== 'none') {
+        idleIndex = (idleIndex + 1) % idleMessages.length;
+        const coffeeLevels = ["Empty", "Low", "Critical", "Emergency"];
+        const randomCoffee = coffeeLevels[Math.floor(Math.random() * coffeeLevels.length)];
+        
+        messageDisplay.innerHTML = `<div class="message-content">
+          > ${idleMessages[idleIndex]}<br>
+          > Coffee: <span class="highlight">${randomCoffee}</span><span class="blink">_</span>
+        </div>`;
+      }
+    }, 3000);
+
+  </script>
+</body>
+</html>
