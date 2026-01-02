@@ -3,31 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Engineering Student Day Predictor</title>
+  <title>Eng. Student Tomorrow Predictor</title>
   
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
     :root {
       --neon-cyan: #0ff;
-      --neon-orange: #ff9900;
+      --neon-pink: #f0f;
       --neon-green: #0f0;
+      --neon-orange: #ff9900;
       --bg-dark: #050510;
+      --glass: rgba(10, 10, 20, 0.95);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Courier New', monospace;
+      font-family: 'Courier New', 'Consolas', monospace;
       background-color: var(--bg-dark);
       color: var(--neon-cyan);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      overflow: hidden;
+      position: relative;
+      padding: 15px;
     }
 
+    /* Simplified background */
     .grid-bg {
       position: fixed;
       width: 200%;
@@ -49,43 +54,51 @@
     .scanlines {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: linear-gradient(to bottom, transparent 49%, rgba(255,255,255,0.02) 50%, transparent 51%);
+      background: linear-gradient(to bottom, 
+        transparent 49%, 
+        rgba(255,255,255,0.02) 50%, 
+        transparent 51%);
       background-size: 100% 3px;
       pointer-events: none;
       z-index: 10;
-      opacity: 0.5;
+      opacity: 0.7;
     }
 
-    /* Main Container */
+    /* --- Main Container (More Compact) --- */
     .container {
-      background: rgba(8, 8, 18, 0.95);
+      background: rgba(8, 8, 18, 0.92);
       border: 1px solid var(--neon-cyan);
       border-radius: 6px;
       padding: 25px;
       width: 100%;
-      max-width: 500px;
-      box-shadow: 0 0 25px rgba(0, 255, 255, 0.15);
+      max-width: 600px;
+      box-shadow: 
+        0 0 25px rgba(0, 255, 255, 0.15), 
+        inset 0 0 20px rgba(0, 255, 255, 0.05);
       text-align: center;
       position: relative;
+      z-index: 1;
     }
 
     h1 {
-      font-size: 1.6rem;
+      font-size: 1.8rem;
       margin-bottom: 5px;
       text-shadow: 0 0 10px var(--neon-cyan);
       letter-spacing: 2px;
       background: linear-gradient(90deg, var(--neon-cyan), var(--neon-orange));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .subtitle {
       color: rgba(255, 255, 255, 0.7);
       font-size: 0.8rem;
       margin-bottom: 20px;
+      letter-spacing: 1px;
     }
 
-    /* Input Area */
+    /* --- Input Area --- */
     .input-group {
       margin-bottom: 20px;
       text-align: left;
@@ -96,6 +109,7 @@
       color: var(--neon-orange);
       font-size: 0.85rem;
       margin-bottom: 8px;
+      text-shadow: 0 0 5px var(--neon-orange);
     }
 
     .hack-select {
@@ -113,13 +127,14 @@
       background-repeat: no-repeat;
       background-position: right 12px top 50%;
       background-size: 10px auto;
+      transition: all 0.3s ease;
     }
 
     .hack-select:hover {
       box-shadow: 0 0 10px var(--neon-cyan);
     }
 
-    /* Button */
+    /* --- Button --- */
     .predict-btn {
       width: 100%;
       background: rgba(0, 255, 255, 0.1);
@@ -130,8 +145,10 @@
       padding: 16px 0;
       border: 1px solid var(--neon-cyan);
       cursor: pointer;
+      text-transform: uppercase;
       transition: all 0.3s;
-      margin-bottom: 20px;
+      letter-spacing: 1px;
+      margin-bottom: 25px;
       position: relative;
       overflow: hidden;
     }
@@ -153,6 +170,7 @@
 
     .predict-btn:hover:not(:disabled) {
       background: rgba(0, 255, 255, 0.2);
+      color: white;
       box-shadow: 0 0 15px var(--neon-cyan);
       transform: translateY(-2px);
     }
@@ -164,11 +182,11 @@
       cursor: not-allowed;
     }
 
-    /* Terminal Window */
+    /* --- Terminal/Output Window (Compact) --- */
     .terminal-window {
       background: rgba(0, 5, 10, 0.9);
       border: 1px solid #333;
-      height: 180px;
+      height: 200px;
       padding: 15px;
       display: flex;
       flex-direction: column;
@@ -176,6 +194,7 @@
       justify-content: center;
       position: relative;
       box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+      overflow: hidden;
       border-radius: 4px;
     }
 
@@ -187,24 +206,27 @@
       top: 0; left: 0;
       box-shadow: 0 0 10px var(--neon-cyan);
       transition: width 0.5s ease;
+      z-index: 5;
     }
 
+    /* Message Display */
     .message-display {
-      font-size: 0.95rem;
-      line-height: 1.5;
+      font-size: 1rem;
+      line-height: 1.6;
       color: #fff;
       text-align: center;
       padding: 10px;
       width: 100%;
-      height: 130px;
+      height: 140px;
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow-y: auto;
     }
 
     .message-content {
       max-width: 95%;
-      padding: 10px;
+      padding: 12px;
       border-left: 2px solid var(--neon-orange);
       background: rgba(0, 20, 40, 0.3);
     }
@@ -237,6 +259,7 @@
       50% { opacity: 0.3; } 
     }
 
+    /* Progress Info */
     .progress-info {
       position: absolute;
       bottom: 10px;
@@ -247,6 +270,7 @@
       padding: 0 15px;
       font-size: 0.8rem;
       color: #888;
+      z-index: 3;
     }
 
     .progress-text {
@@ -254,9 +278,10 @@
       font-weight: bold;
     }
 
-    /* Result */
+    /* Result Styling */
     .result-container {
       display: none;
+      z-index: 4;
       animation: resultFadeIn 0.5s ease;
       width: 100%;
     }
@@ -274,7 +299,7 @@
     }
 
     .result-day {
-      font-size: 2rem;
+      font-size: 2.2rem;
       font-weight: 800;
       text-transform: uppercase;
       margin-bottom: 10px;
@@ -287,7 +312,7 @@
       font-style: italic;
       max-width: 90%;
       margin: 0 auto 10px;
-      line-height: 1.4;
+      line-height: 1.5;
     }
 
     .confidence {
@@ -297,7 +322,7 @@
       opacity: 0.9;
     }
 
-    /* Day colors */
+    /* Day-specific colors */
     .monday-color { color: #ff5555; }
     .tuesday-color { color: #ffaa00; }
     .wednesday-color { color: #ff00ff; }
@@ -306,8 +331,9 @@
     .saturday-color { color: #55ffff; }
     .sunday-color { color: #ffff55; }
 
+    /* Emoji styling */
     .emoji {
-      font-size: 1rem;
+      font-size: 1.1rem;
       margin: 0 2px;
     }
 
@@ -318,17 +344,45 @@
       }
       
       h1 {
-        font-size: 1.4rem;
+        font-size: 1.5rem;
       }
       
       .terminal-window {
-        height: 160px;
+        height: 180px;
         padding: 12px;
       }
       
       .message-display {
         font-size: 0.9rem;
-        height: 115px;
+        height: 120px;
+      }
+      
+      .result-day {
+        font-size: 1.8rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px;
+      }
+      
+      h1 {
+        font-size: 1.3rem;
+      }
+      
+      .predict-btn {
+        font-size: 1rem;
+        padding: 14px 0;
+      }
+      
+      .terminal-window {
+        height: 160px;
+      }
+      
+      .message-display {
+        font-size: 0.85rem;
+        height: 110px;
       }
     }
   </style>
@@ -340,14 +394,14 @@
 
   <main class="container">
     <header>
-      <h1>ENGINEERING STUDENT DAY PREDICTOR</h1>
-      <p class="subtitle">WILL I SURVIVE 3RD YEAR? ASKING FOR A FRIEND</p>
+      <h1>ENGINEERING STUDENT PREDICTOR</h1>
+      <p class="subtitle">WILL I SURVIVE 3RD YEAR? PROBABLY NOT</p>
     </header>
 
     <div class="input-group">
-      <label for="dayInput">> SELECT TODAY (I FORGOT)</label>
+      <label for="dayInput">> SELECT TODAY</label>
       <select id="dayInput" class="hack-select">
-        <option value="" disabled selected>-- What day is it? --</option>
+        <option value="" disabled selected>-- What day even is it? --</option>
         <option value="Monday">Monday</option>
         <option value="Tuesday">Tuesday</option>
         <option value="Wednesday">Wednesday</option>
@@ -363,14 +417,14 @@
     <div class="terminal-window">
       <div class="loader-bar" id="loaderBar"></div>
       <div class="progress-info">
-        <span id="currentOperation">Coffee: Critical</span>
+        <span id="currentOperation">Coffee: Empty</span>
         <span class="progress-text" id="progressText">0%</span>
       </div>
       
       <div class="message-display" id="messageDisplay">
         <div class="message-content">
           > System ready<br>
-          > Coffee level: <span class="highlight">Emergency</span><span class="blink">_</span>
+          > Will to live: Questionable<span class="blink">_</span>
         </div>
       </div>
 
@@ -384,34 +438,44 @@
   </main>
 
   <script>
+    // Days of week
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     
-    // Reduced number of messages for faster loading
+    // Hilarious engineering student messages
     const funnyMessages = [
-      {text: "Trying to understand <span class='engineering-term'>control systems</span>… poles and zeros everywhere <span class='emoji'>⚙️</span>", percent: 20, duration: 2700},
-      {text: "Laplace transforming my will to live… still diverging <span class='emoji'>📉</span>", percent: 40, duration: 2700},
-      {text: "7 a.m. <span class='engineering-term'>EM Fields</span> class… brain still asleep <span class='emoji'>😴</span>", percent: 55, duration: 2700},
-      {text: "Will I finish 3rd year or will 3rd year finish me? <span class='emoji'>🤔</span>", percent: 65, duration: 2700},
-      {text: "Trying to follow the lecture but the lecturer is in s-domain while I'm stuck in time-domain… <span class='emoji'>⏳</span>", percent: 75, duration: 2700},
-      {text: "Professor: 'This is simple' Me: Seeing Maxwell's ghost <span class='emoji'>👻</span>", percent: 85, duration: 2700},
-      {text: "Calculating if I'll survive today's lectures… probability ≈ 0.42 <span class='emoji'>📚</span>", percent: 95, duration: 2700}
+      {text: "Trying to understand control systems but everything is just <span class='engineering-term'>poles and zeros</span> attacking me… <span class='emoji'>⚙️</span>", percent: 10, duration: 3200},
+      {text: "Performing a <span class='engineering-term'>Laplace transform</span> on my will to live… still diverging. <span class='emoji'>📉</span>", percent: 20, duration: 3000},
+      {text: "Analyzing a <span class='engineering-term'>unit step function</span>… wishing my life had a step input too. <span class='emoji'>🪜</span>", percent: 30, duration: 2800},
+      {text: "Attending a 7 a.m. <span class='engineering-term'>EM Fields</span> class… my brain is still in sleep mode. <span class='emoji'>😴</span>", percent: 40, duration: 3500},
+      {text: "Calculating electric flux while my own energy is at 2%… <span class='emoji'>⚡</span>", percent: 50, duration: 3000},
+      {text: "Professor: 'This is very simple.' Me: Sir, I'm seeing Maxwell's ghost. <span class='emoji'>👻</span>", percent: 55, duration: 2800},
+      {text: "Running control system stability analysis… discovering <span class='highlight'>*I'm*</span> the unstable one. <span class='emoji'>🧍‍♀️💥</span>", percent: 60, duration: 3200},
+      {text: "Will I finish 3rd year or will 3rd year finish me? Simulation inconclusive. <span class='emoji'>🔁</span>", percent: 65, duration: 3500},
+      {text: "Trying to follow the lecture but the lecturer is in s-domain while I'm stuck in time-domain… <span class='emoji'>⏳</span>", percent: 70, duration: 3000},
+      {text: "Converting my stress into Laplace domain… still not simplified. <span class='emoji'>🧠➜📘</span>", percent: 75, duration: 2800},
+      {text: "Applying a low-pass filter to my emotions because they're too noisy. <span class='emoji'>🎚️</span>", percent: 80, duration: 3200},
+      {text: "<span class='engineering-term'>Electromagnetic Fields</span>: where the fields are imaginary and so is my understanding. <span class='emoji'>🌐</span>", percent: 85, duration: 3000},
+      {text: "7 a.m. class again… my body is stable but my mind is oscillating. <span class='emoji'>📉😵‍💫</span>", percent: 90, duration: 2800},
+      {text: "Thinking about 3rd year… step response: overshoot, ringing, and eventual collapse. <span class='emoji'>📉😂</span>", percent: 95, duration: 3200}
     ];
 
+    // Snarky comments
     const snarkyComments = {
-      "Monday": "My condolences. 7 AM EM Fields awaits. ☕",
-      "Tuesday": "Control systems lab day. Good luck. ⚙️",
-      "Wednesday": "Hump day. Almost to weekend collapse. 🏔️",
-      "Thursday": "Friday's awkward sibling. Hang in there. 🤞",
-      "Friday": "Weekend loading... unless you have Saturday lab. 🎉",
-      "Saturday": "A day to sleep through missed lectures. 😴",
-      "Sunday": "The calm before the Monday storm. ⛈️"
+      "Monday": "My condolences. 7 AM EM Fields awaits.",
+      "Tuesday": "Control systems lab day. Godspeed.",
+      "Wednesday": "Hump day. You're halfway to weekend collapse.",
+      "Thursday": "Basically Friday's awkward sibling.",
+      "Friday": "Weekend loading... unless you have Saturday lab.",
+      "Saturday": "A day to catch up on all the lectures you slept through.",
+      "Sunday": "The calm before the Monday storm. Enjoy the dread."
     };
 
+    // Confidence messages
     const confidenceMessages = [
+      "Accuracy: Higher than my understanding of Laplace",
       "Confidence: 42% (The engineering answer)",
-      "Accuracy: Higher than my GPA 📊",
-      "Certainty: More than my 7 AM attendance ⏰",
-      "Trust factor: Better than my alarm reliability ⏰"
+      "Certainty: Better than my 7 AM attendance",
+      "Reliability: More stable than my sleep schedule"
     ];
 
     // DOM Elements
@@ -426,16 +490,20 @@
     const currentOperation = document.getElementById('currentOperation');
     const confidenceDisplay = document.getElementById('confidenceDisplay');
 
+    // Helpers
     const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     const getRandomConfidence = () => confidenceMessages[Math.floor(Math.random() * confidenceMessages.length)];
 
+    // Main prediction function
     async function runPrediction() {
       const currentDay = dayInput.value;
 
+      // Validation
       if (!currentDay) {
         messageDisplay.innerHTML = `<div class="message-content">
           > <span class="highlight">ERROR: NO DAY SELECTED</span><br>
-          > Please select a day first<span class="blink">_</span>
+          > Select a day first<br>
+          > (I know calendars are confusing)<span class="blink">_</span>
         </div>`;
         return;
       }
@@ -448,45 +516,66 @@
       loaderBar.style.width = '0%';
       progressText.textContent = '0%';
       
-      // Quick initial message
+      // Initial message
       messageDisplay.innerHTML = `<div class="message-content">
-        > Starting survival analysis<br>
-        > Coffee: <span class="highlight">Critical</span><span class="blink">_</span>
+        > Initiating 3rd year survival analysis<br>
+        > Coffee status: <span class="highlight">Critical</span><span class="blink">_</span>
       </div>`;
-      currentOperation.textContent = "Initializing...";
-      await wait(1000);
+      currentOperation.textContent = "Checking coffee supply...";
+      await wait(1800);
 
-      // Show funny messages - faster now
+      // Show funny messages with good timing
       for (let i = 0; i < funnyMessages.length; i++) {
         const {text, percent, duration} = funnyMessages[i];
         
+        // Update progress
         loaderBar.style.width = `${percent}%`;
         progressText.textContent = `${percent}%`;
-        currentOperation.textContent = text.replace(/<[^>]*>/g, '').substring(0, 25) + '...';
+        currentOperation.textContent = text.replace(/<[^>]*>/g, '').substring(0, 30) + '...';
         
+        // Show message
         messageDisplay.innerHTML = `<div class="message-content">
           > ${text}<br>
           <span class="percentage">Progress: ${percent}%</span><span class="blink">_</span>
         </div>`;
         
+        // Wait for duration
         await wait(duration);
+        
+        // Occasionally add a sub-operation
+        if (Math.random() > 0.6 && i < funnyMessages.length - 2) {
+          const subOps = [
+            "Calculating sleep deprivation...",
+            "Measuring caffeine levels...",
+            "Evaluating lecture comprehension...",
+            "Estimating exam panic..."
+          ];
+          const subOp = subOps[Math.floor(Math.random() * subOps.length)];
+          messageDisplay.innerHTML = `<div class="message-content">
+            > ${text}<br>
+            > ${subOp}<br>
+            <span class="percentage">Progress: ${percent}%</span><span class="blink">_</span>
+          </div>`;
+          await wait(1800);
+        }
       }
 
-      // Final quick step
+      // Final loading
       loaderBar.style.width = '100%';
       progressText.textContent = '100%';
-      currentOperation.textContent = "Finalizing";
+      currentOperation.textContent = "Finalizing prediction";
       messageDisplay.innerHTML = `<div class="message-content">
         > Analysis complete<br>
-        > Result: <span class="highlight">You'll probably survive</span><span class="blink">_</span>
+        > 3rd year survival: <span class="highlight">Questionable but possible</span><span class="blink">_</span>
       </div>`;
-      await wait(1200);
+      await wait(2000);
 
-      // Calculate and show result
+      // Calculate result
       const currentIndex = days.indexOf(currentDay);
       const nextIndex = (currentIndex + 1) % 7;
       const nextDay = days[nextIndex];
 
+      // Display result
       messageDisplay.style.display = 'none';
       resultArea.style.display = 'block';
       
@@ -495,12 +584,12 @@
       snarkDisplay.innerText = snarkyComments[nextDay];
       confidenceDisplay.innerText = getRandomConfidence();
       
-      // Quick confetti
+      // Confetti
       confetti({
-        particleCount: 100,
-        spread: 70,
+        particleCount: 150,
+        spread: 80,
         origin: { y: 0.7 },
-        colors: ['#0ff', '#ff9900'],
+        colors: ['#0ff', '#ff9900', '#0f0'],
         disableForReducedMotion: true
       });
 
@@ -508,7 +597,7 @@
       setTimeout(() => {
         btn.textContent = "PREDICT AGAIN";
         btn.disabled = false;
-      }, 800);
+      }, 1200);
     }
 
     // Event listeners
@@ -518,13 +607,14 @@
       if (e.key === 'Enter') runPrediction();
     });
 
-    // Idle messages (simpler)
+    // Idle messages
     const idleMessages = [
-      "Coffee: Critical",
-      "Laplace: Confusing",
-      "7 AM: Dread",
-      "3rd year: Surviving?",
-      "Sleep: Deprived"
+      "Coffee: Empty",
+      "Control systems trauma: Active",
+      "7 AM class dread: Maximum",
+      "Laplace understanding: Minimal",
+      "Will to live: Questionable",
+      "3rd year survival: Uncertain"
     ];
     
     let idleIndex = 0;
@@ -532,13 +622,33 @@
     setInterval(() => {
       if (!btn.disabled && messageDisplay.style.display !== 'none') {
         idleIndex = (idleIndex + 1) % idleMessages.length;
-        const coffeeLevels = ["Empty", "Low", "Critical", "Emergency"];
+        const coffeeLevels = ["Empty", "Low", "Critical", "Need coffee"];
         const randomCoffee = coffeeLevels[Math.floor(Math.random() * coffeeLevels.length)];
         
         messageDisplay.innerHTML = `<div class="message-content">
+          > System idle<br>
           > ${idleMessages[idleIndex]}<br>
           > Coffee: <span class="highlight">${randomCoffee}</span><span class="blink">_</span>
         </div>`;
+      }
+    }, 4000);
+
+    // Random status updates
+    setInterval(() => {
+      if (!btn.disabled) {
+        const ops = [
+          "COFFEE: CRITICAL",
+          "LAPLACE: 0% UNDERSTANDING",
+          "7 AM CLASS TRAUMA",
+          "CONTROL SYSTEMS CONFUSION",
+          "SLEEP DEPRIVED"
+        ];
+        const randomOp = ops[Math.floor(Math.random() * ops.length)];
+        
+        if (currentOperation.textContent.includes("Coffee") || 
+            currentOperation.textContent.includes("System")) {
+          currentOperation.textContent = randomOp;
+        }
       }
     }, 3000);
 
